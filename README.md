@@ -17,7 +17,7 @@
 
 <p align="center">
 brpcweb是专为baidurpc开发一套在线管理控制台，提供在线的服务管理功能。
-baidu rpc服务连接：[https://github.com/baidu-golang/pbrpc]
+想了解baidu rpc项目，请查看：[https://github.com/baidu-golang/pbrpc]
 </p>
 
 
