@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <!-- import CSS -->
+  <link rel="stylesheet" href="${{ .Prefix }}static/index.css">
+  <title>Baidu RPC 管理控制台</title>
+</head>
+<!-- import Vue before Element -->
+<script src="${{ .Prefix }}static/vue.js"></script>
+<!-- import JavaScript -->
+<script src="${{ .Prefix }}static/element-ui.js"></script>
+<script src="${{ .Prefix }}static/jquery-3.2.1.min.js"></script>
+<script src="${{ .Prefix }}static/util.js"></script>
+<script src="${{ .Prefix }}static/echarts.min.js"></script>
+
+<body>
+  <div id="app">
+    <!-- dialog to show queue content result -->
+    <el-dialog :title="'查看 '+RPCQPSDialog+' QPS信息'" :visible.sync="dialogQPSVisible">
+      <div id="echarts_box" style="width: 100%;height:400px;" ref="echarts_box"></div>
+    </el-dialog>
+
+    <!-- dialog to show queue content result -->
+    <el-dialog :title="'查看 '+RPCStatusDialog+' RPC服务状态'" :visible.sync="dialogTableVisible">
+      <el-form :model="gridStatusData" :hidden="hiddenRPCInfo">
+        <el-divider content-position="left">RPC服务信息</el-divider>
+        <el-form-item label="名称">
+          <el-input v-model="gridStatusData.name" disabled autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="IP地址">
+          <el-input v-model="gridStatusData.host" disabled autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="端口">
+          <el-input v-model="gridStatusData.port" disabled autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="超时设置(ms)">
+          <el-input v-model="gridStatusData.timeout" disabled autocomplete="off"></el-input>
+        </el-form-item>
+      </el-form>
+      <el-divider content-position="left">RPC方法发布列表</el-divider>
+      <el-table :data="gridStatusData.data" border>
+        <el-table-column property="service" label="service" width="200"></el-table-column>
+        <el-table-column property="method" label="method"></el-table-column>
+        <el-table-column label="操作">
+          <template slot-scope="scope">
+            <el-tooltip effect="dark" :content="'点击弹框显示[' + scope.row.method + ']QPS数据'" placement="top">
+              <el-badge :value="scope.row.size" :max="99" class="item" type="primary"
+                :hidden="scope.row.size==0?true:false">
+                <el-button size="mini" icon="el-icon-view"
+                  @click="handleViewRpcQPS(scope.$index, scope.row, gridStatusData.name)">
+                  查看QPS信息
+                </el-button>
+              </el-badge>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
+
+    <!-- drawer dialog to show update queue path -->
+    <el-drawer :title="'修改 '+updateQueueDialogTitle+' RPC信息'" :before-close="handleUpdatePathDialogClose"
+      :visible.sync="updatePathDialog" direction="ltr" custom-class="demo-drawer" ref="drawer">
+      <div class="demo-drawer__content">
+        <el-form :model="rpcUpdateform">
+          <el-form-item label="名称">
+            <el-input v-model="rpcUpdateform.name" disabled autocomplete="off"></el-input>
+          </el-form-item>
+          <el-form-item label="IP地址">
+            <el-input v-model="rpcUpdateform.host" autocomplete="off"></el-input>
+          </el-form-item>
+          <el-form-item label="端口">
+            <el-input v-model="rpcUpdateform.port" autocomplete="off"></el-input>
+          </el-form-item>
+        </el-form>
+        <div class="demo-drawer__footer">
+          <el-button @click="handleUpdatePathDialogClose">取 消</el-button>
+          <el-button type="primary" @click="onSubmitUpdate(rpcUpdateform.name, rpcUpdateform.host, rpcUpdateform.port)">
+            确 定
+          </el-button>
+        </div>
+      </div>
+    </el-drawer>
+
+    <!-- drawer dialog to show create a new queue  -->
+    <el-drawer title="添加RPC服务" :before-close="handleCreateRPCDialogClose" :visible.sync="createQueueDialog"
+      direction="ltr" custom-class="demo-drawer" ref="drawer">
+      <div class="demo-drawer__content">
+        <el-form :inline="true" :model="formInline" class="demo-form-inline">
+          <el-form-item label="名称">
+            <el-input v-model="formInline.name" maxlength="20" show-word-limit placeholder="RPC 名称(唯一)"></el-input>
+          </el-form-item>
+          <el-form-item label="IP地址">
+            <el-input v-model="formInline.host" placeholder="Host机器名或IP地址"></el-input>
+          </el-form-item>
+          <el-form-item label="端口">
+            <el-input v-model="formInline.port" placeholder="端口" v-model="formInline.port"
+              @keyup.enter.native="onSubmit(formInline, formInline.name, formInline.host, formInline.port)"></el-input>
+          </el-form-item>
+        </el-form>
+        </el-form>
+        <div class="demo-drawer__footer">
+          <el-button @click="handleCreateRPCDialogClose">取 消</el-button>
+          <el-button @click="resetForm(formInline)">重 置</el-button>
+          <el-button type="primary" @click="onSubmit(formInline, formInline.name, formInline.host, formInline.port)">确 定
+          </el-button>
+        </div>
+      </div>
+    </el-drawer>
+
+    <el-container>
+      <el-header>Baidu RPC 管理控制台</el-header>
+      <el-header>
+        <el-menu default-active="1" class="el-menu-demo" mode="horizontal" @select="handleMenuSelect"
+          background-color="#aea2ca" text-color="#fff" active-text-color="#ffd04b">
+          <el-menu-item index="1">
+            <template slot="title">
+              <i class="el-icon-plus"></i>
+              <span>添加RPC服务</span>
+            </template>
+          </el-menu-item>
+        </el-menu>
+      </el-header>
+
+      <el-main>
+        <el-table :data="tableData" :row-class-name="tableRowClassName">
+          <el-table-column prop="name" label="名称" width="120">
+          </el-table-column>
+          <el-table-column prop="host" label="服务IP" width="120">
+          </el-table-column>
+          <el-table-column prop="port" label="端口" width="120">
+          </el-table-column>
+          <el-table-column prop="datestr" label="日期" width="300">
+          </el-table-column>
+          <el-table-column label="操作">
+            <template slot-scope="scope">
+              <el-tooltip effect="dark" content="点击弹框显示RPC服务状态信息" placement="top">
+                <el-badge :value="scope.row.size" :max="99" class="item" type="primary"
+                  :hidden="scope.row.size==0?true:false">
+                  <el-button size="mini" icon="el-icon-view"
+                    @click="handleViewRpcStatus(scope.$index, scope.row, true)">
+                    查看服务状态
+                  </el-button>
+                </el-badge>
+              </el-tooltip>
+              <el-badge value="" class="item1" type="primary">
+                <el-tooltip class="item" effect="dark" content="点击弹框显示详细的信息" placement="top">
+                  <el-button size="mini" icon="el-icon-s-tools"
+                    @click="handleViewRpcStatus(scope.$index, scope.row, false)">查看服务QPS信息
+                </el-tooltip>
+                </el-button>
+              </el-badge>
+              <el-badge value="" class="item1" type="primary">
+                <el-tooltip class="item" effect="dark" content="点击弹框显示所有可读数据" placement="top">
+                  <el-button icon="el-icon-edit" type="warning" size="mini"
+                    @click="handleUpdateDialogShow(scope.$index, scope.row)">
+                    修改
+                </el-tooltip>
+                </el-button>
+              </el-badge>
+              <el-badge value="" class="item" type="primary">
+                <el-button icon="el-icon-delete" type="danger" size="mini"
+                  @click="handleDeleteRPC(scope.$index, scope.row)">
+                  删除
+                </el-button>
+              </el-badge>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-pagination @current-change="handleCurrentChangeMain" @size-change="handleSizeChangeMain"
+          :current-page.sync="mainPageControl.page" :page-size="mainPageControl.pageSize" :page-sizes="[5, 8, 10]"
+          :hide-on-single-page="false" layout="sizes, total, prev, pager, next" :total="mainPageControl.total">
+        </el-pagination>
+      </el-main>
+    </el-container>
+
+  </div>
+</body>
+<style>
+  .el-header {
+    background-color: #aea2ca;
+    color: #333;
+    line-height: 60px;
+    text-align: center;
+  }
+
+  .el-aside {
+    color: #333;
+  }
+
+  .el-table .warning-row {
+    background: oldlace;
+  }
+
+  .el-table .success-row {
+    background: #f0f9eb;
+  }
+
+  .item {
+    margin-top: 10px;
+    margin-right: 15px;
+  }
+
+  .item1 {
+    margin-top: 0px;
+    margin-right: 15px;
+  }
+
+  .item2 {
+    margin-top: 20px;
+    margin-right: 10px;
+  }
+</style>
+
+
+<script>
+
+  prefixPath = '${{ .Prefix }}'
+  prefixPath = prefixPath.replace('\/', '/')
+  new Vue({
+    el: '#app',
+    data: {
+      urlprefix: prefixPath,
+      tableData: [],
+      formInline: {
+        name: '',
+        host: '',
+        port: 1031,
+      },
+      rpcUpdateform: {
+        host: '',
+        port: 0
+      },
+      gridData: [],
+      dialogTableVisible: false,
+      gridStatusData: {},
+      dialogStatusVisible: false,
+      updateQueueDialogTitle: '',
+      updatePathDialog: false,
+      createQueueDialog: false,
+      RPCStatusDialog: '',
+      rpcStatusform: {},
+      hiddenRPCInfo: false,
+      RPCQPSDialog: '',
+      dialogQPSVisible: false,
+      pageControl: {
+        page: 1,
+        pageSize: 10,
+        queue: '',
+        total: 0
+      },
+      mainPageControl: {
+        page: 1,
+        pageSize: 5,
+        queue: '',
+        total: 0
+      },
+      progressWidth: 100,
+      colors: [
+        { color: '#f56c6c', percentage: 100 },
+        { color: '#e6a23c', percentage: 80 },
+        { color: '#5cb87a', percentage: 60 },
+        { color: '#1989fa', percentage: 40 },
+        { color: '#6f7ad3', percentage: 20 }
+      ]
+
+    },
+    created: function () {
+      this.getTableData()
+    },
+    methods: {
+      getTableData: function () {
+        var self = this;
+
+        this.getPaginTableData(1, this.mainPageControl.pageSize)
+      },
+      // 显示 rpc列表
+      getPaginTableData(page, pagesize) {
+        var self = this;
+        ajaxJsonRequest(self.urlprefix + "rpc?page=" + page + "&pagesize=" + pagesize, "get", "", function (json) {
+          self.tableData = json.data.data;
+          self.mainPageControl.page = page
+          self.mainPageControl.total = json.data.size
+        }, function (json) {
+          self.$message('加载失败');
+        })
+      },
+      tableRowClassName({ row, rowIndex }) {
+        if (rowIndex % 2 == 0) {
+          return 'warning-row';
+        }
+        return '';
+      },
+
+      // 添加 rpc服务
+      onSubmit(form, name, host, port) {
+        if (name == null || name == undefined || name == '') {
+          return;
+        }
+        if (host == null || host == undefined || host == '') {
+          return;
+        }
+        var self = this;
+        data = { name: name, host: host, port: parseInt(port) }
+        ajaxJsonRequest(self.urlprefix + "rpc", "post", JSON.stringify(data), function (json) {
+          if (json.errno == 0) {
+            self.$message({ message: 'RPC"' + name + '" 添加成功', type: 'success', showClose: true, center: true, duration: 5000 });
+            form.name = ''
+            form.host = ''
+            self.getTableData()
+          } else {
+            self.$message({ message: 'RPC"' + name + '" 添加失败, 错误信息="' + json.message + '"', type: 'error', showClose: true, center: true, duration: 5000 });
+          }
+        }, function (json) {
+          self.$message("添加RPC失败" + json);
+        })
+
+      },
+      resetForm(formName) {
+        formName.name = ''
+        formName.host = ''
+        formName.port = 1031
+      },
+
+      // 修改 rpc服务
+      onSubmitUpdate(name, host, port) {
+        var self = this;
+        ajaxJsonRequest(self.urlprefix + "rpc/" + name + "?host=" + host + "&port=" + port, "put", "", function (json) {
+          if (json.errno == 0) {
+            self.$message({ message: 'RPC"' + name + '" 修改成功', type: 'success', showClose: true, center: true, duration: 5000 });
+            self.updatePathDialog = false
+            self.getTableData()
+          } else {
+            self.$message({ message: 'RPC"' + name + '" 修改失败, 错误信息="' + json.message + '"', type: 'error', showClose: true, center: true, duration: 5000 });
+          }
+        }, function (json) {
+          self.$message("修改RPC失败" + json);
+        })
+      },
+
+      // 删除 rpc服务
+      handleDeleteRPC(index, row) {
+        var self = this;
+
+        this.$confirm('此操作将永久删除该RPC服务, 是否继续?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          name = row.name
+          ajaxJsonRequest(self.urlprefix + "rpc/" + name, "delete", "", function (json) {
+            if (json.errno == 0) {
+              self.$message({ message: 'RPC"' + name + '" 删除成功', type: 'success', showClose: true, center: true, duration: 5000 });
+              self.getTableData()
+            } else {
+              self.$message({ message: 'RPC"' + name + '" 删除失败, 错误信息="' + json.message + '"', type: 'error', showClose: true, center: true, duration: 5000 });
+            }
+          }, function (json) {
+            self.$message("删除RPC失败" + json);
+          })
+        });
+
+      },
+      // 查看RPC服务状态
+      handleViewRpcStatus(index, row, showRpcInfo) {
+        var self = this;
+        if (showRpcInfo) {
+          self.hiddenRPCInfo = false
+        } else {
+          true
+          self.hiddenRPCInfo = true
+        }
+        ajaxJsonRequest(self.urlprefix + "rpc/" + row.name + "/status", "get", "", function (json) {
+
+          if (json.errno == 0) {
+            self.gridStatusData = {}
+            self.dialogTableVisible = true
+            self.RPCStatusDialog = row.name
+
+            self.gridStatusData = json.data
+          } else {
+            self.$message({ message: '查看 RPC"' + row.name + '" 信息失败, 错误信息="' + json.message + '"', type: 'error', showClose: true, center: true, duration: 5000 });
+          }
+
+        }, function (json) {
+          self.$message("Dequeue失败" + json);
+        })
+      },
+
+      // 查看某方法QPS信息
+      handleViewRpcQPS(index, row, name) {
+        self = this
+        self.RPCQPSDialog = row.method
+        self.dialogQPSVisible = true
+
+        this.$nextTick(() => {
+          let dom = document.getElementById('echarts_box')
+
+
+          var myChart = echarts.init(dom)
+          ajaxJsonRequest(self.urlprefix + "rpc/" + name + "/qps?service=" + row.service + "&method=" + row.method, "get", "", function (json) {
+
+            if (json.errno == 0) {
+
+              option = {
+                tooltip: {
+                  formatter:function(params) {
+                    return "QPS=" +params.data + "<br>" + params.name
+                    
+                  }
+                },
+                xAxis: {
+                  type: 'category',
+                  data: json.data.categoryData
+                },
+                yAxis: {
+                  type: 'value'
+                },
+                series: [{
+                  data: json.data.seriesData,
+                  type: 'line',
+                  smooth: true,
+                  itemStyle : { normal: {label : {show: true}}}
+                }]
+              };
+              if (option && typeof option === 'object') {
+                myChart.setOption(option);
+              }
+
+
+            } else {
+              self.$message({ message: '查看 RPC"' + row.name + '" 信息失败, 错误信息="' + json.message + '"', type: 'error', showClose: true, center: true, duration: 5000 });
+            }
+
+          }, function (json) {
+            self.$message("Dequeue失败" + json);
+          })
+        })
+
+      },
+
+      handleUpdatePathDialogClose() {
+        this.updatePathDialog = false
+      },
+      handleCreateRPCDialogClose() {
+        this.createQueueDialog = false
+      },
+      handleUpdateDialogShow(index, row) {
+        this.updateQueueDialogTitle = row.name
+        this.rpcUpdateform = { host: row.host, port: row.port, name: row.name }
+        this.updatePathDialog = true
+      },
+      handleSizeChange(val) {
+        console.log(`每页 ${val} 条`);
+      },
+      handleCurrentChange(val) {
+        this.handlePeekPageable(val, this.pageControl.queue, function () { })
+      },
+      handleCurrentChangeMain(pageid) {
+        this.getPaginTableData(pageid, this.mainPageControl.pageSize)
+      },
+      handleSizeChangeMain(pagesize) {
+        this.mainPageControl.pageSize = pagesize
+        this.getPaginTableData(1, pagesize)
+      },
+      handleMenuSelect(key, keyPath) {
+        this.createQueueDialog = true
+      }
+    }
+  })
+
+</script>
+
+</html>
