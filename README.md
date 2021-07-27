@@ -6,10 +6,20 @@
 
 <h1 align="center">brpcweb</h1>
 
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/jhunters/brpcweb?style=flat-square)](https://goreportcard.com/report/github.com/jhunters/brpcweb)
+[![Go](https://github.com/jhunters/brpcweb/actions/workflows/go.yml/badge.svg)](https://github.com/jhunters/brpcweb/actions/workflows/go.yml)
+[![Releases](https://img.shields.io/github/release/jhunters/brpcweb/all.svg?style=flat-square)](https://github.com/jhunters/brpcweb/releases)
+[![Godoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://godoc.org/github.com/jhunters/brpcweb)
+[![Go Reference](https://golang.com.cn/badge/github.com/jhunters/brpcweb.svg)](https://golang.com.cn/github.com/jhunters/brpcweb)
+[![LICENSE](https://img.shields.io/github/license/jhunters/brpcweb.svg?style=flat-square)](https://github.com/jhunters/brpcweb/blob/master/LICENSE)
+
+
 <p align="center">
 brpcweb是专为baidurpc开发一套在线管理控制台，提供在线的服务管理功能。
-baidu rpc服务连接：[https://github.com/baidu-golang/pbrpc](https://github.com/baidu-golang/pbrpc)
+baidu rpc服务连接：[https://github.com/baidu-golang/pbrpc]
 </p>
+
 
 ## overview picture
 ![pic/main.png](pic/main.png)
