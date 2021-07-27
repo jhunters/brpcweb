@@ -87,7 +87,7 @@
     <el-drawer title="添加RPC服务" :before-close="handleCreateRPCDialogClose" :visible.sync="createQueueDialog"
       direction="ltr" custom-class="demo-drawer" ref="drawer">
       <div class="demo-drawer__content">
-        <el-form :inline="true" :model="formInline" class="demo-form-inline">
+        <el-form  :model="formInline">
           <el-form-item label="名称">
             <el-input v-model="formInline.name" maxlength="20" show-word-limit placeholder="RPC 名称(唯一)"></el-input>
           </el-form-item>
