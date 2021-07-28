@@ -148,7 +148,7 @@ func (wm *WebModule) StartWeb() *http.Server {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
-
+	log.Printf("brpc web server started at %s", wm.listener.Addr().String())
 	return srv
 }
 

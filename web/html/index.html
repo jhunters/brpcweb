@@ -371,6 +371,14 @@
           true
           self.hiddenRPCInfo = true
         }
+
+        const loading = self.$loading({
+          lock: true,
+          text: 'Loading',
+          spinner: 'el-icon-loading',
+          background: 'rgba(0, 0, 0, 0.7)'
+        });
+
         ajaxJsonRequest(self.urlprefix + "rpc/" + row.name + "/status", "get", "", function (json) {
 
           if (json.errno == 0) {
@@ -386,6 +394,7 @@
         }, function (json) {
           self.$message("Dequeue失败" + json);
         })
+        loading.close()
       },
 
       // 查看某方法QPS信息
