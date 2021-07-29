@@ -17,12 +17,12 @@
 
 <body>
   <div id="app">
-    <!-- dialog to show queue content result -->
+    <!-- dialog to show qps chart  -->
     <el-dialog :title="'查看 '+RPCQPSDialog+' QPS信息'" :visible.sync="dialogQPSVisible">
       <div id="echarts_box" style="width: 100%;height:400px;" ref="echarts_box"></div>
     </el-dialog>
 
-    <!-- dialog to show queue content result -->
+    <!-- dialog to show view rpc info -->
     <el-dialog :title="'查看 '+RPCStatusDialog+' RPC服务状态'" :visible.sync="dialogTableVisible">
       <el-form :model="gridStatusData" :hidden="hiddenRPCInfo">
         <el-divider content-position="left">RPC服务信息</el-divider>
@@ -40,26 +40,60 @@
         </el-form-item>
       </el-form>
       <el-divider content-position="left">RPC方法发布列表</el-divider>
-      <el-table :data="gridStatusData.data" border>
+      <el-table :data="gridStatusData.data" stripe border>
         <el-table-column property="service" label="service" width="200"></el-table-column>
         <el-table-column property="method" label="method"></el-table-column>
         <el-table-column label="操作">
           <template slot-scope="scope">
+            <el-tooltip effect="dark" :content="'点击弹框显示[' + scope.row.method + ']元信息'" placement="top">
+              <el-button size="mini" icon="el-icon-view" @click="handleViewRpcMeta(scope.$index, scope.row)">
+                查看元信息
+              </el-button>
+            </el-tooltip>
             <el-tooltip effect="dark" :content="'点击弹框显示[' + scope.row.method + ']QPS数据'" placement="top">
-              <el-badge :value="scope.row.size" :max="99" class="item" type="primary"
-                :hidden="scope.row.size==0?true:false">
-                <el-button size="mini" icon="el-icon-view"
-                  @click="handleViewRpcQPS(scope.$index, scope.row, gridStatusData.name)">
-                  查看QPS信息
-                </el-button>
-              </el-badge>
+              <el-button size="mini" icon="el-icon-view"
+                @click="handleViewRpcQPS(scope.$index, scope.row, gridStatusData.name)">
+                查看QPS信息
+              </el-button>
             </el-tooltip>
           </template>
         </el-table-column>
       </el-table>
     </el-dialog>
 
-    <!-- drawer dialog to show update queue path -->
+    <!-- dialog to show view rpc method meta info -->
+    <el-dialog title="查看方法元数据" :visible.sync="dialogMetaTableVisible">
+      <el-form :model="rpcmeta">
+        <el-form-item label="服务名">
+          <el-input v-model="rpcmeta.service" disabled autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="方法名">
+          <el-input v-model="rpcmeta.method" disabled autocomplete="off"></el-input>
+        </el-form-item>
+      </el-form>
+      <el-divider content-position="left">入参</el-divider>
+      <el-table :data="rpcmeta.intype" border stripe default-expand-all row-key="name"
+        :tree-props="{children: 'sub_field_meta', hasChildren: 'hasChildren'}">
+        <el-table-column property="name" label="field name" width="200"></el-table-column>
+        <el-table-column property="type" label="type"></el-table-column>
+        <el-table-column property="tag" label="tag order"></el-table-column>
+        <el-table-column property="opt" label="option"></el-table-column>
+      </el-table>
+      <el-divider content-position="left">返回对象</el-divider>
+      <el-table :data="rpcmeta.returntype" row-key="name" border default-expand-all
+        :tree-props="{children: 'sub_field_meta', hasChildren: 'hasChildren'}">
+        <el-table-column property="name" label="field name" width="180">
+        </el-table-column>
+        <el-table-column property="type" label="type">
+        </el-table-column>
+        <el-table-column property="tag" label="tag order">
+        </el-table-column>
+        <el-table-column property="opt" label="option">
+        </el-table-column>
+      </el-table>
+    </el-dialog>
+
+    <!-- drawer dialog to show update rpc info path -->
     <el-drawer :title="'修改 '+updateQueueDialogTitle+' RPC信息'" :before-close="handleUpdatePathDialogClose"
       :visible.sync="updatePathDialog" direction="ltr" custom-class="demo-drawer" ref="drawer">
       <div class="demo-drawer__content">
@@ -83,11 +117,11 @@
       </div>
     </el-drawer>
 
-    <!-- drawer dialog to show create a new queue  -->
+    <!-- drawer dialog to show append a new rpc server  -->
     <el-drawer title="添加RPC服务" :before-close="handleCreateRPCDialogClose" :visible.sync="createQueueDialog"
       direction="ltr" custom-class="demo-drawer" ref="drawer">
       <div class="demo-drawer__content">
-        <el-form  :model="formInline">
+        <el-form :model="formInline">
           <el-form-item label="名称">
             <el-input v-model="formInline.name" maxlength="20" show-word-limit placeholder="RPC 名称(唯一)"></el-input>
           </el-form-item>
@@ -244,6 +278,13 @@
       hiddenRPCInfo: false,
       RPCQPSDialog: '',
       dialogQPSVisible: false,
+      dialogMetaTableVisible: false,
+      rpcmeta: {
+        service: '',
+        method: '',
+        intype: [],
+        returntype: []
+      },
       pageControl: {
         page: 1,
         pageSize: 10,
@@ -385,7 +426,6 @@
             self.gridStatusData = {}
             self.dialogTableVisible = true
             self.RPCStatusDialog = row.name
-
             self.gridStatusData = json.data
           } else {
             self.$message({ message: '查看 RPC"' + row.name + '" 信息失败, 错误信息="' + json.message + '"', type: 'error', showClose: true, center: true, duration: 5000 });
@@ -393,9 +433,9 @@
 
         }, function (json) {
           loading.close()
-          self.$message("Dequeue失败" + json);
+          self.$message("查看 RPC失败" + json);
         })
-        
+
       },
 
       // 查看某方法QPS信息
@@ -415,9 +455,9 @@
 
               option = {
                 tooltip: {
-                  formatter:function(params) {
-                    return "QPS=" +params.data + "<br>" + params.name
-                    
+                  formatter: function (params) {
+                    return "QPS=" + params.data + "<br>" + params.name
+
                   }
                 },
                 xAxis: {
@@ -431,7 +471,7 @@
                   data: json.data.seriesData,
                   type: 'line',
                   smooth: true,
-                  itemStyle : { normal: {label : {show: true}}}
+                  itemStyle: { normal: { label: { show: true } } }
                 }]
               };
               if (option && typeof option === 'object') {
@@ -444,10 +484,28 @@
             }
 
           }, function (json) {
-            self.$message("Dequeue失败" + json);
+            self.$message("查看 RPC失败" + json);
           })
         })
 
+      },
+      // 查看方法元数据
+      handleViewRpcMeta(index, row) {
+        self = this
+        self.dialogMetaTableVisible = true
+        self.rpcmeta.service = row.service
+        self.rpcmeta.method = row.method
+        if (row.intype !== null && row.intype !== undefined && row.intype !== '' && row.intype !== '[null]') {
+          self.rpcmeta.intype = JSON.parse(row.intype)
+        } else {
+          self.rpcmeta.intype = []
+        }
+        if (row.returntype !== null && row.returntype !== undefined && row.returntype !== '' && row.returntype !== '[null]') {
+          self.rpcmeta.returntype = JSON.parse(row.returntype)
+          console.log(JSON.stringify(self.rpcmeta.returntype))
+        } else {
+          self.rpcmeta.returntype = []
+        }
       },
 
       handleUpdatePathDialogClose() {
