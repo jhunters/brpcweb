@@ -380,7 +380,7 @@
         });
 
         ajaxJsonRequest(self.urlprefix + "rpc/" + row.name + "/status", "get", "", function (json) {
-
+          loading.close()
           if (json.errno == 0) {
             self.gridStatusData = {}
             self.dialogTableVisible = true
@@ -392,9 +392,10 @@
           }
 
         }, function (json) {
+          loading.close()
           self.$message("Dequeue失败" + json);
         })
-        loading.close()
+        
       },
 
       // 查看某方法QPS信息
