@@ -129,15 +129,17 @@ func (wm *WebModule) AddRPCServer(name string, host string, port int) error {
 func (wm *WebModule) StartWeb() *http.Server {
 	router := gin.Default()
 
+	// server static and html files
 	wm.servStaticFiles(router)
 	wm.servHtmlFiles(router)
 
-	wm.listRpcs(router)
-	wm.addRpc(router)
-	wm.updateRpc(router)
-	wm.deleteRpc(router)
-	wm.loadRpcStatus(router)
-	wm.loadRpcRequestStatus(router)
+	// server http urls
+	wm.listRpcs(http.MethodGet, wm.getPath("/rpc"), router)
+	wm.addRpc(http.MethodPost, wm.getPath("/rpc"), router)
+	wm.updateRpc(http.MethodPut, wm.getPath("/rpc/:name"), router)
+	wm.deleteRpc(http.MethodDelete, wm.getPath("/rpc/:name"), router)
+	wm.loadRpcStatus(http.MethodGet, wm.getPath("/rpc/:name/status"), router)
+	wm.loadRpcRequestStatus(http.MethodGet, wm.getPath("/rpc/:name/qps"), router)
 
 	srv := &http.Server{
 		Handler: router,
@@ -171,9 +173,9 @@ func (wm *WebModule) StartWebAndBlock() {
 }
 
 // servService service defined here
-func (wm *WebModule) listRpcs(router *gin.Engine) {
+func (wm *WebModule) listRpcs(method, path string, router *gin.Engine) {
 	// get rpc info list
-	router.GET(wm.getPath("/rpc"), func(c *gin.Context) {
+	router.Handle(method, path, func(c *gin.Context) {
 		withJsonHeader(c)
 
 		// pagination
@@ -217,9 +219,9 @@ func (wm *WebModule) listRpcs(router *gin.Engine) {
 }
 
 // addRpc add a new rpc info
-func (wm *WebModule) addRpc(router *gin.Engine) {
+func (wm *WebModule) addRpc(method, path string, router *gin.Engine) {
 	// add rpc info
-	router.POST(wm.getPath("/rpc"), func(c *gin.Context) {
+	router.Handle(method, path, func(c *gin.Context) {
 		body, _ := ioutil.ReadAll(c.Request.Body)
 		if body != nil {
 			data, err := unmarshalRpcOptions(body)
@@ -256,9 +258,9 @@ func (wm *WebModule) addRpc(router *gin.Engine) {
 }
 
 // updateRpc update rpc info
-func (wm *WebModule) updateRpc(router *gin.Engine) {
+func (wm *WebModule) updateRpc(method, path string, router *gin.Engine) {
 	// add rpc info
-	router.PUT(wm.getPath("/rpc/:name"), func(c *gin.Context) {
+	router.Handle(method, path, func(c *gin.Context) {
 
 		name := c.Param("name")
 		host := c.Query("host")
@@ -290,9 +292,9 @@ func (wm *WebModule) updateRpc(router *gin.Engine) {
 }
 
 // deleteRpc delete rpc info
-func (wm *WebModule) deleteRpc(router *gin.Engine) {
+func (wm *WebModule) deleteRpc(method, path string, router *gin.Engine) {
 	// add rpc info
-	router.DELETE(wm.getPath("/rpc/:name"), func(c *gin.Context) {
+	router.Handle(method, path, func(c *gin.Context) {
 
 		name := c.Param("name")
 
@@ -307,9 +309,9 @@ func (wm *WebModule) deleteRpc(router *gin.Engine) {
 }
 
 // loadRpcStatus load rpc info
-func (wm *WebModule) loadRpcStatus(router *gin.Engine) {
+func (wm *WebModule) loadRpcStatus(method, path string, router *gin.Engine) {
 	// add rpc info
-	router.GET(wm.getPath("/rpc/:name/status"), func(c *gin.Context) {
+	router.Handle(method, path, func(c *gin.Context) {
 
 		name := c.Param("name")
 
@@ -359,9 +361,9 @@ func (wm *WebModule) loadRpcStatus(router *gin.Engine) {
 }
 
 // loadRpcStatus load rpc info
-func (wm *WebModule) loadRpcRequestStatus(router *gin.Engine) {
+func (wm *WebModule) loadRpcRequestStatus(method, path string, router *gin.Engine) {
 	// add rpc info
-	router.GET(wm.getPath("/rpc/:name/qps"), func(c *gin.Context) {
+	router.Handle(method, path, func(c *gin.Context) {
 
 		name := c.Param("name")
 		serviceName := c.Query("service")
