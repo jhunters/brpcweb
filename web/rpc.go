@@ -16,8 +16,6 @@ import (
 
 const (
 	Default_Timeout = 10 * time.Second
-
-	RPC_STATUS_SERVICENAME = "___baidurpc_service"
 )
 
 type RpcOptions struct {
@@ -44,7 +42,7 @@ func unmarshalRpcOptions(data []byte) (*RpcOptions, error) {
 // loadRpcRequestStatus
 func loadRpcRequestStatus(host string, port int, sName, mName string) (*baidurpc.QpsData, error) {
 
-	serviceName := RPC_STATUS_SERVICENAME
+	serviceName := baidurpc.RPC_STATUS_SERVICENAME
 	methodName := "QpsDataStatus"
 
 	parameterOut := &baidurpc.QpsData{}
@@ -57,7 +55,7 @@ func loadRpcRequestStatus(host string, port int, sName, mName string) (*baidurpc
 // loadRpcStatus
 func loadRpcStatus(host string, port int) (*baidurpc.RPCStatus, error) {
 
-	serviceName := RPC_STATUS_SERVICENAME
+	serviceName := baidurpc.RPC_STATUS_SERVICENAME
 	methodName := "Status"
 
 	parameterOut := &baidurpc.RPCStatus{}
