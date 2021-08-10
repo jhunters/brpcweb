@@ -502,7 +502,6 @@
         }
         if (row.returntype !== null && row.returntype !== undefined && row.returntype !== '' && row.returntype !== '[null]') {
           self.rpcmeta.returntype = JSON.parse(row.returntype)
-          console.log(JSON.stringify(self.rpcmeta.returntype))
         } else {
           self.rpcmeta.returntype = []
         }
