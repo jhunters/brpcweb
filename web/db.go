@@ -57,7 +57,7 @@ func getData(db *bolt.DB, name, bucketName string) ([]byte, error) {
 		return nil, err
 	}
 	defer tx.Commit()
-	bucket, err := tx.CreateBucketIfNotExists([]byte(Bucket_Name))
+	bucket, err := tx.CreateBucketIfNotExists([]byte(bucketName))
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func getData(db *bolt.DB, name, bucketName string) ([]byte, error) {
 // putData
 func putData(db *bolt.DB, name, bucketName string, data []byte, errExist bool) error {
 	err := db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte(Bucket_Name))
+		bucket, err := tx.CreateBucketIfNotExists([]byte(bucketName))
 		if err != nil {
 			return err
 		}
@@ -87,7 +87,7 @@ func putData(db *bolt.DB, name, bucketName string, data []byte, errExist bool) e
 // deleteData
 func deleteData(db *bolt.DB, name, bucketName string) error {
 	err := db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte(Bucket_Name))
+		bucket, err := tx.CreateBucketIfNotExists([]byte(bucketName))
 		if err != nil {
 			return err
 		}
