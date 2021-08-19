@@ -42,7 +42,7 @@ func main() {
 
 	addr := ":" + strconv.Itoa(*port) // host and port
 	var headsize uint8 = 4
-	selector, err := nettool.NewCustomListenerSelectorByAddr(addr, headsize, nettool.Equal_Mode)
+	selector, err := nettool.NewCustomListenerSelectorByAddr("tcp", addr, headsize, nettool.Equal_Mode)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -80,6 +80,8 @@ func main() {
 	// Block until a signal is received.
 	fmt.Println("Press Ctrl+C or send kill sinal to exit.")
 	<-c
+
+	selector.Close()
 }
 
 type EchoService struct {

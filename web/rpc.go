@@ -80,6 +80,7 @@ func sendRpc(host string, port int, serviceName, methodName string, parameterIn,
 	if err != nil {
 		return err
 	}
+	defer rpcClient.Close()
 
 	rpcInvocation := baidurpc.NewRpcInvocation(&serviceName, &methodName)
 	if parameterIn != nil {

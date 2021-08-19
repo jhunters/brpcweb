@@ -3,7 +3,7 @@ module github.com/jhunters/brpcweb
 go 1.16
 
 require (
-	github.com/baidu-golang/pbrpc v1.0.12
+	github.com/baidu-golang/pbrpc v1.1.2
 	github.com/gin-gonic/gin v1.7.1
 	github.com/golang/protobuf v1.5.2
 	github.com/kr/pretty v0.1.0 // indirect
