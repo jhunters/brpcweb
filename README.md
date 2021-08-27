@@ -13,6 +13,7 @@
 [![Godoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://godoc.org/github.com/jhunters/brpcweb)
 [![Go Reference](https://golang.com.cn/badge/github.com/jhunters/brpcweb.svg)](https://golang.com.cn/github.com/jhunters/brpcweb)
 [![LICENSE](https://img.shields.io/github/license/jhunters/brpcweb.svg?style=flat-square)](https://github.com/jhunters/brpcweb/blob/master/LICENSE)
+[![Codeac](https://static.codeac.io/badges/2-389898624.svg "Codeac")](https://app.codeac.io/github/jhunters/brpcweb)
 
 
 <p align="center">
